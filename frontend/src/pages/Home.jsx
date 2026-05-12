@@ -4,7 +4,6 @@ import { useAuth } from "../context/AuthContext";
 import { 
   FaUsers, 
   FaBook,
-  FaBookOpen, 
   FaChartBar, 
   FaAddressBook, 
   FaMoneyBillWave, 

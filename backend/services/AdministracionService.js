@@ -37,6 +37,23 @@ class AdministracionService {
     return Number(Number(valor || 0).toFixed(decimales));
   }
 
+  async getEvangelismoMemberColumn() {
+    const result = await query(`
+      SELECT column_name
+      FROM information_schema.columns
+      WHERE table_name = 'evangelismo'
+        AND column_name IN ('miembro_id', 'misionero_id', 'member_id')
+      ORDER BY CASE column_name
+        WHEN 'miembro_id' THEN 1
+        WHEN 'misionero_id' THEN 2
+        WHEN 'member_id' THEN 3
+        ELSE 99
+      END
+    `);
+
+    return result.rows[0]?.column_name || null;
+  }
+
   getPreviousMonth(mes, anio) {
     const meses = [
       'ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO',
@@ -88,6 +105,21 @@ class AdministracionService {
         const index = monthOrder[row.mes];
         if (index !== undefined) {
           serie[index] = parseInt(row.total_estudios) || 0;
+        }
+      });
+
+    return serie;
+  }
+
+  mapMonthlySeriesByMonthNumber(rows, anio, valueField = 'total') {
+    const serie = Array(12).fill(0);
+
+    rows
+      .filter((row) => parseInt(row.anio) === anio)
+      .forEach((row) => {
+        const monthIndex = (parseInt(row.mes_num) || 0) - 1;
+        if (monthIndex >= 0 && monthIndex < 12) {
+          serie[monthIndex] += parseInt(row[valueField]) || 0;
         }
       });
 
@@ -253,8 +285,8 @@ class AdministracionService {
   }
 
   // ===== ESTADÍSTICAS GENERALES =====
-  async getEstadisticasGenerales() {
-    const [usuarios, miembros, contactos, estudios, estudiosPorAnioMes, estudiantesPorAnioMes] = await Promise.all([
+  async getEstadisticasGenerales(anioSeleccionado = null, opciones = {}) {
+    const [usuarios, miembros, contactos, estudios, estudiosPorAnioMes, estudiantesPorAnioMes, miembrosPorAnioMesTipo] = await Promise.all([
       query('SELECT COUNT(*) as total FROM usuarios WHERE activo = TRUE'),
       query('SELECT COUNT(*) as total FROM miembros WHERE activo = TRUE'),
       query('SELECT COUNT(*) as total FROM contactos WHERE activo = TRUE'),
@@ -278,15 +310,43 @@ class AdministracionService {
         WHERE activo = TRUE
         GROUP BY anio, mes
         ORDER BY anio DESC, ${this.getMonthOrderCase('mes')} DESC
+      `),
+      query(`
+        SELECT
+          EXTRACT(YEAR FROM created_at)::int AS anio,
+          EXTRACT(MONTH FROM created_at)::int AS mes_num,
+          COALESCE(NULLIF(tipo_miembro, ''), 'Sin tipo') AS tipo_miembro,
+          COUNT(*) AS total
+        FROM miembros
+        WHERE activo = TRUE
+        GROUP BY 1, 2, 3
+        ORDER BY anio DESC, mes_num DESC, tipo_miembro ASC
       `)
     ]);
 
-    const aniosDisponibles = [...new Set(
-      estudiosPorAnioMes.rows.map((row) => parseInt(row.anio))
-    )].sort((a, b) => b - a);
-
-    const anioActual = aniosDisponibles[0] || new Date().getFullYear();
-    const anioAnterior = aniosDisponibles[1] || (anioActual - 1);
+    const currentYear = new Date().getFullYear();
+    const anioActual = Number.isInteger(anioSeleccionado) && anioSeleccionado > 0
+      ? anioSeleccionado
+      : currentYear;
+    const anioAnterior = anioActual - 1;
+    const aniosDisponibles = [...new Set([
+      ...estudiosPorAnioMes.rows.map((row) => parseInt(row.anio)),
+      ...estudiantesPorAnioMes.rows.map((row) => parseInt(row.anio)),
+      ...miembrosPorAnioMesTipo.rows.map((row) => parseInt(row.anio)),
+      anioActual,
+      anioAnterior
+    ])].sort((a, b) => b - a);
+    const mesActual = new Date().toLocaleString('es-ES', { month: 'long' }).toUpperCase();
+    const anioEvangelismo = Number.isInteger(opciones.anioEvangelismo) && opciones.anioEvangelismo > 0
+      ? opciones.anioEvangelismo
+      : anioActual;
+    const mesEvangelismo = opciones.mesEvangelismo
+      ? String(opciones.mesEvangelismo).toUpperCase()
+      : mesActual;
+    const modoEvangelismo = opciones.modoEvangelismo === 'anual' ? 'anual' : 'mensual';
+    const anioComparacionEvangelismo = Number.isInteger(opciones.anioComparacionEvangelismo) && opciones.anioComparacionEvangelismo > 0
+      ? opciones.anioComparacionEvangelismo
+      : (anioEvangelismo - 1);
 
     const labels = this.getMonthLabels();
     const serieActual = this.mapMonthlySeries(estudiosPorAnioMes.rows, anioActual);
@@ -298,6 +358,30 @@ class AdministracionService {
       })),
       anioActual
     );
+    const tiposMiembroDisponibles = [...new Set(
+      miembrosPorAnioMesTipo.rows.map((row) => row.tipo_miembro).filter(Boolean)
+    )].sort((a, b) => a.localeCompare(b));
+    const crecimientoMiembrosPorTipo = tiposMiembroDisponibles.reduce((acc, tipo) => {
+      const rowsTipo = miembrosPorAnioMesTipo.rows.filter((row) => row.tipo_miembro === tipo);
+      const seriesPorAnio = {};
+
+      aniosDisponibles.forEach((anio) => {
+        seriesPorAnio[anio] = this.mapMonthlySeriesByMonthNumber(rowsTipo, anio, 'total');
+      });
+
+      acc[tipo] = seriesPorAnio;
+      return acc;
+    }, {});
+    const crecimientoMiembrosTodos = {};
+
+    aniosDisponibles.forEach((anio) => {
+      crecimientoMiembrosTodos[anio] = this.mapMonthlySeriesByMonthNumber(
+        miembrosPorAnioMesTipo.rows,
+        anio,
+        'total'
+      );
+    });
+
     const totalAnterior = serieAnterior.reduce((sum, value) => sum + value, 0);
     const totalActual = serieActual.reduce((sum, value) => sum + value, 0);
     const rendimientoProfesoresResult = await query(`
@@ -326,7 +410,79 @@ class AdministracionService {
       };
     });
 
+    const evangelismoMemberColumn = await this.getEvangelismoMemberColumn();
+
+    let evangelismoProfesoresResult = { rows: [] };
+    let evangelismoProfesoresComparacionResult = { rows: [] };
+    let aniosEvangelismoDisponibles = [anioEvangelismo, anioComparacionEvangelismo];
+
+    if (evangelismoMemberColumn) {
+      const evangelismoAniosResult = await query(`
+        SELECT DISTINCT anio
+        FROM evangelismo
+        WHERE anio IS NOT NULL
+        ORDER BY anio DESC
+      `);
+
+      aniosEvangelismoDisponibles = [...new Set([
+        ...evangelismoAniosResult.rows.map((row) => parseInt(row.anio)),
+        anioEvangelismo,
+        anioComparacionEvangelismo
+      ])].sort((a, b) => b - a);
+
+      const filtroMensual = modoEvangelismo === 'mensual'
+        ? `AND UPPER(e.mes) = $2`
+        : '';
+      const paramsPeriodoActual = modoEvangelismo === 'mensual'
+        ? [anioEvangelismo, mesEvangelismo]
+        : [anioEvangelismo];
+
+      evangelismoProfesoresResult = await query(`
+        SELECT
+          m.id,
+          m.nombre,
+          COALESCE(SUM(e.horas), 0) AS total_horas
+        FROM miembros m
+        LEFT JOIN evangelismo e
+          ON e.${evangelismoMemberColumn} = m.id
+          AND e.anio = $1
+          ${filtroMensual}
+        WHERE m.activo = TRUE
+        GROUP BY m.id, m.nombre
+        ORDER BY total_horas DESC, m.nombre ASC
+      `, paramsPeriodoActual);
+
+      if (modoEvangelismo === 'anual') {
+        evangelismoProfesoresComparacionResult = await query(`
+          SELECT
+            m.id,
+            m.nombre,
+            COALESCE(SUM(e.horas), 0) AS total_horas
+          FROM miembros m
+          LEFT JOIN evangelismo e
+            ON e.${evangelismoMemberColumn} = m.id
+            AND e.anio = $1
+          WHERE m.activo = TRUE
+          GROUP BY m.id, m.nombre
+          ORDER BY total_horas DESC, m.nombre ASC
+        `, [anioComparacionEvangelismo]);
+      }
+    }
+
+    const evangelismoProfesores = evangelismoProfesoresResult.rows.map((row) => ({
+      id: parseInt(row.id),
+      nombre: row.nombre,
+      total_horas: this.redondear(parseFloat(row.total_horas || 0), 1)
+    }));
+    const evangelismoProfesoresComparacion = evangelismoProfesoresComparacionResult.rows.map((row) => ({
+      id: parseInt(row.id),
+      nombre: row.nombre,
+      total_horas: this.redondear(parseFloat(row.total_horas || 0), 1)
+    }));
+
     return {
+      anio_seleccionado: anioActual,
+      anios_disponibles: aniosDisponibles,
       total_usuarios: parseInt(usuarios.rows[0].total),
       total_miembros: parseInt(miembros.rows[0].total),
       total_contactos: parseInt(contactos.rows[0].total),
@@ -350,11 +506,30 @@ class AdministracionService {
         anio: anioActual,
         profesores: rendimientoProfesores
       },
+      evangelismo_profesores: {
+        modo: modoEvangelismo,
+        anio: anioEvangelismo,
+        mes: modoEvangelismo === 'mensual' ? mesEvangelismo : null,
+        anios_disponibles: aniosEvangelismoDisponibles,
+        anio_comparacion: modoEvangelismo === 'anual' ? anioComparacionEvangelismo : null,
+        profesores: evangelismoProfesores,
+        profesores_comparacion: evangelismoProfesoresComparacion
+      },
       crecimiento_estudiantes: {
         anio: anioActual,
         labels,
         serie: crecimientoEstudiantesActual,
         total: crecimientoEstudiantesActual.reduce((sum, value) => sum + value, 0)
+      },
+      crecimiento_miembros: {
+        anio: anioActual,
+        labels,
+        anios_disponibles: aniosDisponibles,
+        tipos_disponibles: ['Todos', ...tiposMiembroDisponibles],
+        series_por_tipo: {
+          Todos: crecimientoMiembrosTodos,
+          ...crecimientoMiembrosPorTipo
+        }
       }
     };
   }
