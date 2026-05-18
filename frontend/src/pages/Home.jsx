@@ -3,8 +3,6 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { 
   FaUsers, 
-  FaBook,
-  FaBookOpen, 
   FaChartBar, 
   FaAddressBook, 
   FaMoneyBillWave, 
@@ -12,16 +10,22 @@ import {
   FaUser, 
   FaCog,
   FaChartLine,
-  FaHammer
+  FaHammer,
+  FaBook,
+  FaBars
 } from "react-icons/fa";
 import toast from 'react-hot-toast';
 import axios from '../api/axios';
+import colors from '../utils/colors';
+import MenuLateral from '../components/MenuLateral';
+import SelectorIdiomaGoogle from '../components/SelectorIdiomaGoogle';
 
 export default function Home() {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const [permisosUsuario, setPermisosUsuario] = useState([]);
   const [cargando, setCargando] = useState(true);
+  const [menuAbierto, setMenuAbierto] = useState(false);
 
   useEffect(() => {
     cargarPermisos();
@@ -47,35 +51,35 @@ export default function Home() {
 
   const modulosConPermisos = [
     { 
-      titulo: "Miembros", 
-      desc: "Registros, seguimiento, visitas.", 
+      titulo: "Miembros",
+      desc: "Registros, seguimiento, visitas.",
       ruta: "/miembros",
       icon: <FaUsers size={32} />,
-      color: "#2196F3",
+      color: colors.primary,
       permiso: "miembros",
       animacion: "bounce"
     },
     { 
-      titulo: "Estudios Bíblicos", 
-      desc: "Control semanal tipo Excel.", 
+      titulo: "Estudios Bíblicos",
+      desc: "Control semanal tipo Excel.",
       ruta: "/estudios-biblicos",
       icon: <FaBook size={32} />,
-      color: "#4CAF50",
+      color: colors.success,
       permiso: "estudios_biblicos",
       animacion: "flip"
     },
     { 
-      titulo: "Reportes", 
-      desc: "Resultados y metas cumplidas.", 
+      titulo: "Reportes",
+      desc: "Resultados y metas cumplidas.",
       ruta: "/reportes",
       icon: <FaChartBar size={32} />,
-      color: "#4CAF50",
+      color: colors.success,
       permiso: "reportes",
       animacion: "pulse"
     },
     { 
-      titulo: "Contactos", 
-      desc: "Nuevos, pendientes y seguimiento.", 
+      titulo: "Contactos",
+      desc: "Nuevos, pendientes y seguimiento.",
       ruta: "/contactos",
       icon: <FaAddressBook size={32} />,
       color: "#9C27B0",
@@ -83,17 +87,17 @@ export default function Home() {
       animacion: "shake"
     },
     { 
-      titulo: "Administración", 
-      desc: "Presupuesto, control financiero.", 
+      titulo: "Administración",
+      desc: "Presupuesto, control financiero.",
       ruta: "/administracion",
       icon: <FaMoneyBillWave size={32} />,
-      color: "#F44336",
+      color: colors.danger,
       permiso: "administracion",
       animacion: "spin-slow"
     },
     { 
-      titulo: "Estadísticas", 
-      desc: "Gráficos y reportes por país.", 
+      titulo: "Estadísticas",
+      desc: "Gráficos y reportes por país.",
       ruta: "/estadisticas",
       icon: <FaChartLine size={32} />,
       color: "#673AB7",
@@ -101,18 +105,18 @@ export default function Home() {
       animacion: "pulse"
     },
     { 
-      titulo: "Estudios", 
-      desc: "🚧 En construcción - Próximamente", 
+      titulo: "Estudios",
+      desc: "🚧 En construcción - Próximamente",
       ruta: null,
       icon: <FaHammer size={32} />,
-      color: "#FF9800",
+      color: colors.warning,
       permiso: "estudios_biblicos",
       animacion: "shake",
       enConstruccion: true
     },
     { 
-      titulo: "Configuración", 
-      desc: "Usuarios, roles y permisos.", 
+      titulo: "Configuración",
+      desc: "Usuarios, roles y permisos.",
       ruta: "/configuracion",
       icon: <FaCog size={32} />,
       color: "#607D8B",
@@ -127,7 +131,7 @@ export default function Home() {
 
   if (cargando) {
     return (
-      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "linear-gradient(135deg, #0E5A61, #15777F)" }}>
+      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: `linear-gradient(135deg, ${colors.primary}, ${colors.primaryLight})` }}>
         <div style={{ fontSize: "18px", color: "white" }}>Cargando...</div>
       </div>
     );
@@ -137,12 +141,30 @@ export default function Home() {
     <div
       style={{
         minHeight: "100vh",
-        background: "linear-gradient(135deg, #0E5A61, #15777F)",
+        background: `linear-gradient(135deg, ${colors.primary}, ${colors.primaryLight})`,
         padding: "20px"
       }}
     >
       <style>
         {`
+          /* Ocultar banner de Google Translate */
+          .goog-te-banner-frame {
+            display: none !important;
+          }
+          
+          body {
+            top: 0 !important;
+          }
+          
+          .skiptranslate {
+            display: none !important;
+          }
+
+          /* Ocultar el widget de Google */
+          .goog-te-gadget {
+            display: none !important;
+          }
+
           @keyframes fadeIn {
             from { opacity: 0; transform: translateY(-20px); }
             to { opacity: 1; transform: translateY(0); }
@@ -233,6 +255,13 @@ export default function Home() {
         `}
       </style>
 
+      {/* Menú Lateral */}
+      <MenuLateral 
+        isOpen={menuAbierto} 
+        onClose={() => setMenuAbierto(false)}
+        permisos={permisosUsuario}
+      />
+
       {/* Header con info de usuario */}
       <div
         style={{
@@ -244,16 +273,49 @@ export default function Home() {
           animation: "fadeIn 0.6s ease"
         }}
       >
-        <div style={{ color: "white" }}>
-          <h1 style={{ margin: 0, fontSize: "32px", fontWeight: "700" }}>
-            Iglesia Emanuel
-          </h1>
-          <p style={{ margin: "5px 0 0", opacity: 0.9, fontSize: "14px" }}>
-            Panel de Control
-          </p>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+          {/* Botón menú hamburguesa */}
+          <button
+            onClick={() => setMenuAbierto(true)}
+            style={{
+              background: "rgba(255,255,255,0.15)",
+              backdropFilter: "blur(10px)",
+              border: "none",
+              borderRadius: "12px",
+              width: "48px",
+              height: "48px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              color: "white",
+              cursor: "pointer",
+              transition: "all 0.3s"
+            }}
+            onMouseOver={(e) => {
+              e.currentTarget.style.background = "rgba(255,255,255,0.25)";
+            }}
+            onMouseOut={(e) => {
+              e.currentTarget.style.background = "rgba(255,255,255,0.15)";
+            }}
+          >
+            <FaBars size={20} />
+          </button>
+
+          <div style={{ color: "white" }}>
+            <h1 style={{ margin: 0, fontSize: "32px", fontWeight: "700" }}>
+              Iglesia Emanuel
+            </h1>
+            <p style={{ margin: "5px 0 0", opacity: 0.9, fontSize: "14px" }}>
+              Panel de Control
+            </p>
+          </div>
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: "15px" }}>
+          {/* Selector de idioma con Google Translate */}
+          <SelectorIdiomaGoogle />
+
+          {/* Info de usuario */}
           <div
             style={{
               background: "rgba(255,255,255,0.15)",
@@ -277,6 +339,7 @@ export default function Home() {
             </div>
           </div>
 
+          {/* Botón cerrar sesión */}
           <button
             onClick={handleLogout}
             style={{
@@ -378,7 +441,7 @@ export default function Home() {
                 margin: "0 0 10px",
                 fontSize: "22px",
                 fontWeight: "700",
-                color: "#1a1a1a"
+                color: colors.textPrimary
               }}
             >
               {card.titulo}
@@ -386,7 +449,7 @@ export default function Home() {
             <p
               style={{
                 margin: 0,
-                color: "#666",
+                color: colors.textSecondary,
                 fontSize: "14px",
                 lineHeight: "1.5"
               }}
