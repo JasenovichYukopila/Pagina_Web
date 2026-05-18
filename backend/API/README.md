@@ -48,7 +48,7 @@ backend/API/
 | Driver DB      | asyncpg 0.30.0                      |
 | Validacion      | Pydantic 2.10.3 + pydantic-settings |
 | Base de datos   | PostgreSQL (Neon Serverless)         |
-| Despliegue     | Docker / Railway                     |
+| Despliegue     | Railway                              |
 
 ---
 
@@ -66,7 +66,7 @@ Copia `.env.example` a `.env` y completa los valores:
 | `ACCESS_TOKEN_EXPIRE_MINUTES` | Duracion del token en minutos (default: `60`)       |
 | `ENVIRONMENT`             | `development` o `production` (activa SQL echo en dev)  |
 
-### Instalacion local
+### Instalacion local (desarrollo)
 
 ```bash
 cd backend/API
@@ -79,12 +79,13 @@ pip install -r requirements.txt
 uvicorn app.main:app --reload --port 8000
 ```
 
-### Docker
+La API estara disponible en `http://localhost:8000`.
 
-```bash
-docker build -t gnit-api .
-docker run -p 8000:8000 --env-file .env gnit-api
-```
+### Despliegue en Railway
+
+La API ya esta desplegada en Railway con Docker. El archivo `railway.toml` configura el builder automaticamente. Para redesplegar, simplemente haz push al repositorio y Railway reconstruira la imagen.
+
+La URL de produccion es: `https://gnit-api-production.up.railway.app`
 
 ---
 
@@ -323,27 +324,29 @@ Los schemas de Pydantic aplican estas validaciones:
 
 ## Ejemplos de Uso
 
-La URL base de la API depende del entorno:
+La API esta desplegada en Railway y accesible publicamente:
 
-- **Local**: `http://localhost:8000`
-- **Produccion (Railway)**: `https://gnit-api-production.up.railway.app`
+| Entorno   | URL                                                |
+| --------- | -------------------------------------------------- |
+| Produccion | `https://gnit-api-production.up.railway.app`    |
+| Local     | `https://gnit-api-production.up.railway.app` (solo para desarrollo)    |
 
-En los ejemplos siguientes usamos `http://localhost:8000` como base. Reemplazala por tu URL de produccion segun corresponda.
+Todas las peticiones de los ejemplos usan la URL de produccion. Para desarrollo local, reemplaza la URL base por `https://gnit-api-production.up.railway.app`.
 
 ### URL Base
 
 ```
-http://localhost:8000
+https://gnit-api-production.up.railway.app
 ```
 
 ### Verificar estado del servicio
 
 ```bash
 # Verificar que la API esta funcionando
-curl http://localhost:8000/
+curl https://gnit-api-production.up.railway.app/
 
 # Health check
-curl http://localhost:8000/health
+curl https://gnit-api-production.up.railway.app/health
 ```
 
 **Respuesta `/`:**
@@ -365,10 +368,10 @@ curl http://localhost:8000/health
 
 ```
 # Swagger UI (interactiva, permite probar endpoints)
-http://localhost:8000/docs
+https://gnit-api-production.up.railway.app/docs
 
 # ReDoc (documentacion legible)
-http://localhost:8000/redoc
+https://gnit-api-production.up.railway.app/redoc
 ```
 
 ---
@@ -378,7 +381,7 @@ http://localhost:8000/redoc
 #### Listar todos los paises
 
 ```bash
-curl http://localhost:8000/paises
+curl https://gnit-api-production.up.railway.app/paises
 ```
 
 **Respuesta `200`:**
@@ -400,7 +403,7 @@ curl http://localhost:8000/paises
 #### Obtener un pais por ID
 
 ```bash
-curl http://localhost:8000/paises/1
+curl https://gnit-api-production.up.railway.app/paises/1
 ```
 
 **Respuesta `200`:**
@@ -422,7 +425,7 @@ curl http://localhost:8000/paises/1
 #### Crear un pais
 
 ```bash
-curl -X POST http://localhost:8000/paises \
+curl -X POST https://gnit-api-production.up.railway.app/paises \
   -H "Content-Type: application/json" \
   -d '{
     "iso": "AR",
@@ -442,7 +445,7 @@ curl -X POST http://localhost:8000/paises \
 #### Actualizar un pais (PATCH parcial)
 
 ```bash
-curl -X PATCH http://localhost:8000/paises/3 \
+curl -X PATCH https://gnit-api-production.up.railway.app/paises/3 \
   -H "Content-Type: application/json" \
   -d '{
     "nombre": "Republica Argentina"
@@ -461,7 +464,7 @@ curl -X PATCH http://localhost:8000/paises/3 \
 #### Eliminar un pais
 
 ```bash
-curl -X DELETE http://localhost:8000/paises/3
+curl -X DELETE https://gnit-api-production.up.railway.app/paises/3
 ```
 
 **Respuesta `204`:** Sin contenido.
@@ -474,16 +477,16 @@ curl -X DELETE http://localhost:8000/paises/3
 
 ```bash
 # Todas las ciudades (limit por defecto: 50)
-curl http://localhost:8000/ciudades
+curl https://gnit-api-production.up.railway.app/ciudades
 
 # Filtrar por codigo ISO de pais
-curl "http://localhost:8000/ciudades?pais_iso2=CO"
+curl "https://gnit-api-production.up.railway.app/ciudades?pais_iso2=CO"
 
 # Paginacion: obtener 20 ciudades desde la posicion 40
-curl "http://localhost:8000/ciudades?limit=20&offset=40"
+curl "https://gnit-api-production.up.railway.app/ciudades?limit=20&offset=40"
 
 # Combinar filtros
-curl "http://localhost:8000/ciudades?pais_iso2=CO&limit=10&offset=0"
+curl "https://gnit-api-production.up.railway.app/ciudades?pais_iso2=CO&limit=10&offset=0"
 ```
 
 **Respuesta `200`:**
@@ -507,7 +510,7 @@ curl "http://localhost:8000/ciudades?pais_iso2=CO&limit=10&offset=0"
 #### Crear una ciudad
 
 ```bash
-curl -X POST http://localhost:8000/ciudades \
+curl -X POST https://gnit-api-production.up.railway.app/ciudades \
   -H "Content-Type: application/json" \
   -d '{
     "nombre": "Medellin",
@@ -527,16 +530,16 @@ curl -X POST http://localhost:8000/ciudades \
 
 ```bash
 # Todos los miembros
-curl http://localhost:8000/miembros
+curl https://gnit-api-production.up.railway.app/miembros
 
 # Filtrar por tipo de miembro
-curl "http://localhost:8000/miembros?tipo=Comprometido"
+curl "https://gnit-api-production.up.railway.app/miembros?tipo=Comprometido"
 
 # Filtrar por pais
-curl "http://localhost:8000/miembros?pais_id=1"
+curl "https://gnit-api-production.up.railway.app/miembros?pais_id=1"
 
 # Combinar filtros
-curl "http://localhost:8000/miembros?tipo=Registrado&pais_id=2"
+curl "https://gnit-api-production.up.railway.app/miembros?tipo=Registrado&pais_id=2"
 ```
 
 **Respuesta `200`:**
@@ -563,7 +566,7 @@ curl "http://localhost:8000/miembros?tipo=Registrado&pais_id=2"
 #### Crear un miembro
 
 ```bash
-curl -X POST http://localhost:8000/miembros \
+curl -X POST https://gnit-api-production.up.railway.app/miembros \
   -H "Content-Type: application/json" \
   -d '{
     "id": "miem_002",
@@ -598,7 +601,7 @@ curl -X POST http://localhost:8000/miembros \
 #### Error: miembro duplicado
 
 ```bash
-curl -X POST http://localhost:8000/miembros \
+curl -X POST https://gnit-api-production.up.railway.app/miembros \
   -H "Content-Type: application/json" \
   -d '{
     "id": "miem_002",
@@ -622,19 +625,19 @@ curl -X POST http://localhost:8000/miembros \
 
 ```bash
 # Todos los contactos
-curl http://localhost:8000/contactos
+curl https://gnit-api-production.up.railway.app/contactos
 
 # Filtrar por miembro responsable
-curl "http://localhost:8000/contactos?miembro_responsable_id=miem_001"
+curl "https://gnit-api-production.up.railway.app/contactos?miembro_responsable_id=miem_001"
 
 # Filtrar por pais
-curl "http://localhost:8000/contactos?pais_id=1"
+curl "https://gnit-api-production.up.railway.app/contactos?pais_id=1"
 ```
 
 #### Crear un contacto
 
 ```bash
-curl -X POST http://localhost:8000/contactos \
+curl -X POST https://gnit-api-production.up.railway.app/contactos \
   -H "Content-Type: application/json" \
   -d '{
     "miembro_responsable": "Juan Perez",
@@ -673,25 +676,25 @@ curl -X POST http://localhost:8000/contactos \
 
 ```bash
 # Todos los reportes
-curl http://localhost:8000/reportes
+curl https://gnit-api-production.up.railway.app/reportes
 
 # Filtrar por miembro
-curl "http://localhost:8000/reportes?miembro_id=miem_001"
+curl "https://gnit-api-production.up.railway.app/reportes?miembro_id=miem_001"
 
 # Filtrar por pais
-curl "http://localhost:8000/reportes?pais_id=1"
+curl "https://gnit-api-production.up.railway.app/reportes?pais_id=1"
 
 # Filtrar por anio
-curl "http://localhost:8000/reportes?anio=2025"
+curl "https://gnit-api-production.up.railway.app/reportes?anio=2025"
 
 # Combinar filtros
-curl "http://localhost:8000/reportes?pais_id=1&anio=2025"
+curl "https://gnit-api-production.up.railway.app/reportes?pais_id=1&anio=2025"
 ```
 
 #### Crear un reporte
 
 ```bash
-curl -X POST http://localhost:8000/reportes \
+curl -X POST https://gnit-api-production.up.railway.app/reportes \
   -H "Content-Type: application/json" \
   -d '{
     "miembro_que_reporta": "Juan Perez",
@@ -736,25 +739,25 @@ curl -X POST http://localhost:8000/reportes \
 
 ```bash
 # Todas las cotizaciones
-curl http://localhost:8000/cotizaciones
+curl https://gnit-api-production.up.railway.app/cotizaciones
 
 # Filtrar por estado
-curl "http://localhost:8000/cotizaciones?estado=pendiente"
+curl "https://gnit-api-production.up.railway.app/cotizaciones?estado=pendiente"
 
 # Filtrar por miembro
-curl "http://localhost:8000/cotizaciones?miembro_id=miem_001"
+curl "https://gnit-api-production.up.railway.app/cotizaciones?miembro_id=miem_001"
 
 # Filtrar por periodo
-curl "http://localhost:8000/cotizaciones?anio=2025&mes=5"
+curl "https://gnit-api-production.up.railway.app/cotizaciones?anio=2025&mes=5"
 
 # Combinar filtros
-curl "http://localhost:8000/cotizaciones?estado=aprobado&anio=2025"
+curl "https://gnit-api-production.up.railway.app/cotizaciones?estado=aprobado&anio=2025"
 ```
 
 #### Crear una cotizacion
 
 ```bash
-curl -X POST http://localhost:8000/cotizaciones \
+curl -X POST https://gnit-api-production.up.railway.app/cotizaciones \
   -H "Content-Type: application/json" \
   -d '{
     "fecha": "2025-05-18",
@@ -791,7 +794,7 @@ curl -X POST http://localhost:8000/cotizaciones \
 #### Aprobar una cotizacion (PATCH parcial)
 
 ```bash
-curl -X PATCH http://localhost:8000/cotizaciones/1 \
+curl -X PATCH https://gnit-api-production.up.railway.app/cotizaciones/1 \
   -H "Content-Type: application/json" \
   -d '{
     "estado": "aprobado"
@@ -801,7 +804,7 @@ curl -X PATCH http://localhost:8000/cotizaciones/1 \
 #### Error: mes invalido
 
 ```bash
-curl -X POST http://localhost:8000/cotizaciones \
+curl -X POST https://gnit-api-production.up.railway.app/cotizaciones \
   -H "Content-Type: application/json" \
   -d '{
     "fecha": "2025-05-18",
@@ -834,19 +837,19 @@ curl -X POST http://localhost:8000/cotizaciones \
 
 ```bash
 # Todos los presupuestos
-curl http://localhost:8000/presupuestos
+curl https://gnit-api-production.up.railway.app/presupuestos
 
 # Filtrar por pais
-curl "http://localhost:8000/presupuestos?pais_id=1"
+curl "https://gnit-api-production.up.railway.app/presupuestos?pais_id=1"
 
 # Filtrar por anio y mes
-curl "http://localhost:8000/presupuestos?anio=2025&mes=5"
+curl "https://gnit-api-production.up.railway.app/presupuestos?anio=2025&mes=5"
 
 # Filtrar por tipo de gasto
-curl "http://localhost:8000/presupuestos?tipo_gasto=alquiler_local"
+curl "https://gnit-api-production.up.railway.app/presupuestos?tipo_gasto=alquiler_local"
 
 # Combinar filtros
-curl "http://localhost:8000/presupuestos?pais_id=1&anio=2025&tipo_gasto=alimentacion"
+curl "https://gnit-api-production.up.railway.app/presupuestos?pais_id=1&anio=2025&tipo_gasto=alimentacion"
 ```
 
 Los valores validos para `tipo_gasto` son:
@@ -862,7 +865,7 @@ Los valores validos para `tipo_gasto` son:
 #### Crear un presupuesto
 
 ```bash
-curl -X POST http://localhost:8000/presupuestos \
+curl -X POST https://gnit-api-production.up.railway.app/presupuestos \
   -H "Content-Type: application/json" \
   -d '{
     "pais": "Colombia",
@@ -904,19 +907,19 @@ curl -X POST http://localhost:8000/presupuestos \
 
 ```bash
 # Todas las ejecuciones
-curl http://localhost:8000/ejecuciones
+curl https://gnit-api-production.up.railway.app/ejecuciones
 
 # Filtrar por pais
-curl "http://localhost:8000/ejecuciones?pais_id=1"
+curl "https://gnit-api-production.up.railway.app/ejecuciones?pais_id=1"
 
 # Filtrar por periodo
-curl "http://localhost:8000/ejecuciones?anio=2025&mes=5"
+curl "https://gnit-api-production.up.railway.app/ejecuciones?anio=2025&mes=5"
 ```
 
 #### Crear una ejecucion
 
 ```bash
-curl -X POST http://localhost:8000/ejecuciones \
+curl -X POST https://gnit-api-production.up.railway.app/ejecuciones \
   -H "Content-Type: application/json" \
   -d '{
     "pais": "Colombia",
@@ -953,16 +956,16 @@ curl -X POST http://localhost:8000/ejecuciones \
 
 ```bash
 # Todos los gastos
-curl http://localhost:8000/gastos-reales
+curl https://gnit-api-production.up.railway.app/gastos-reales
 
 # Filtrar por ejecucion
-curl "http://localhost:8000/gastos-reales?ejecucion_id=1"
+curl "https://gnit-api-production.up.railway.app/gastos-reales?ejecucion_id=1"
 ```
 
 #### Crear un gasto real
 
 ```bash
-curl -X POST http://localhost:8000/gastos-reales \
+curl -X POST https://gnit-api-production.up.railway.app/gastos-reales \
   -H "Content-Type: application/json" \
   -d '{
     "ejecucion_id": 1,
@@ -992,19 +995,19 @@ curl -X POST http://localhost:8000/gastos-reales \
 
 ```bash
 # Todas las estadisticas
-curl http://localhost:8000/estadisticas-paises
+curl https://gnit-api-production.up.railway.app/estadisticas-paises
 
 # Filtrar por pais
-curl "http://localhost:8000/estadisticas-paises?pais_id=1"
+curl "https://gnit-api-production.up.railway.app/estadisticas-paises?pais_id=1"
 
 # Filtrar por periodo
-curl "http://localhost:8000/estadisticas-paises?anio=2025&mes=5"
+curl "https://gnit-api-production.up.railway.app/estadisticas-paises?anio=2025&mes=5"
 ```
 
 #### Crear una estadistica
 
 ```bash
-curl -X POST http://localhost:8000/estadisticas-paises \
+curl -X POST https://gnit-api-production.up.railway.app/estadisticas-paises \
   -H "Content-Type: application/json" \
   -d '{
     "nombre_pais": "Colombia",
@@ -1025,13 +1028,13 @@ curl -X POST http://localhost:8000/estadisticas-paises \
 #### Listar roles
 
 ```bash
-curl http://localhost:8000/roles
+curl https://gnit-api-production.up.railway.app/roles
 ```
 
 #### Crear un rol
 
 ```bash
-curl -X POST http://localhost:8000/roles \
+curl -X POST https://gnit-api-production.up.railway.app/roles \
   -H "Content-Type: application/json" \
   -d '{
     "nombre": "Administrador",
@@ -1042,7 +1045,7 @@ curl -X POST http://localhost:8000/roles \
 #### Agregar un permiso a un rol
 
 ```bash
-curl -X POST http://localhost:8000/roles/1/permisos \
+curl -X POST https://gnit-api-production.up.railway.app/roles/1/permisos \
   -H "Content-Type: application/json" \
   -d '{
     "rol_id": 1,
@@ -1054,7 +1057,7 @@ curl -X POST http://localhost:8000/roles/1/permisos \
 #### Actualizar un permiso (activar/desactivar)
 
 ```bash
-curl -X PATCH http://localhost:8000/roles/1/permisos/5 \
+curl -X PATCH https://gnit-api-production.up.railway.app/roles/1/permisos/5 \
   -H "Content-Type: application/json" \
   -d '{
     "activo": false
@@ -1064,13 +1067,13 @@ curl -X PATCH http://localhost:8000/roles/1/permisos/5 \
 #### Listar permisos de un rol
 
 ```bash
-curl http://localhost:8000/roles/1/permisos
+curl https://gnit-api-production.up.railway.app/roles/1/permisos
 ```
 
 #### Eliminar un permiso de un rol
 
 ```bash
-curl -X DELETE http://localhost:8000/roles/1/permisos/5
+curl -X DELETE https://gnit-api-production.up.railway.app/roles/1/permisos/5
 ```
 
 ---
@@ -1080,13 +1083,13 @@ curl -X DELETE http://localhost:8000/roles/1/permisos/5
 #### Listar usuarios
 
 ```bash
-curl http://localhost:8000/usuarios
+curl https://gnit-api-production.up.railway.app/usuarios
 ```
 
 #### Crear un usuario
 
 ```bash
-curl -X POST http://localhost:8000/usuarios \
+curl -X POST https://gnit-api-production.up.railway.app/usuarios \
   -H "Content-Type: application/json" \
   -d '{
     "id": "usr_001",
@@ -1113,7 +1116,7 @@ curl -X POST http://localhost:8000/usuarios \
 #### Actualizar un usuario (PATCH parcial)
 
 ```bash
-curl -X PATCH http://localhost:8000/usuarios/usr_001 \
+curl -X PATCH https://gnit-api-production.up.railway.app/usuarios/usr_001 \
   -H "Content-Type: application/json" \
   -d '{
     "activo": true,
@@ -1124,7 +1127,7 @@ curl -X PATCH http://localhost:8000/usuarios/usr_001 \
 #### Error: email invalido
 
 ```bash
-curl -X POST http://localhost:8000/usuarios \
+curl -X POST https://gnit-api-production.up.railway.app/usuarios \
   -H "Content-Type: application/json" \
   -d '{
     "id": "usr_002",
@@ -1156,13 +1159,13 @@ curl -X POST http://localhost:8000/usuarios \
 #### Listar todas las configuraciones
 
 ```bash
-curl http://localhost:8000/configuracion
+curl https://gnit-api-production.up.railway.app/configuracion
 ```
 
 #### Obtener una configuracion por clave
 
 ```bash
-curl http://localhost:8000/configuracion/nombre_iglesia
+curl https://gnit-api-production.up.railway.app/configuracion/nombre_iglesia
 ```
 
 **Respuesta `200`:**
@@ -1179,7 +1182,7 @@ curl http://localhost:8000/configuracion/nombre_iglesia
 #### Crear una configuracion
 
 ```bash
-curl -X POST http://localhost:8000/configuracion \
+curl -X POST https://gnit-api-production.up.railway.app/configuracion \
   -H "Content-Type: application/json" \
   -d '{
     "clave": "moneda_default",
@@ -1191,7 +1194,7 @@ curl -X POST http://localhost:8000/configuracion \
 #### Actualizar una configuracion (por clave)
 
 ```bash
-curl -X PATCH http://localhost:8000/configuracion/moneda_default \
+curl -X PATCH https://gnit-api-production.up.railway.app/configuracion/moneda_default \
   -H "Content-Type: application/json" \
   -d '{
     "valor": "COP",
@@ -1215,7 +1218,7 @@ curl -X PATCH http://localhost:8000/configuracion/moneda_default \
 ### Ejemplo de error 404
 
 ```bash
-curl http://localhost:8000/paises/9999
+curl https://gnit-api-production.up.railway.app/paises/9999
 ```
 
 ```json
