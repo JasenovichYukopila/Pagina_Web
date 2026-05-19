@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { FaUser, FaLock, FaEye, FaEyeSlash } from "react-icons/fa";
+import { FaEnvelope, FaLock, FaEye, FaEyeSlash } from "react-icons/fa";
 import { useAuth } from "../context/AuthContext";
 import toast from 'react-hot-toast';
 
@@ -16,233 +16,449 @@ export default function Login() {
   const hacerLogin = async (e) => {
     e.preventDefault();
     setError("");
-
     if (email.trim() === "" || password.trim() === "") {
-      setError("Por favor llene todos los campos.");
+      setError("Please fill in all fields.");
       return;
     }
-
     setLoading(true);
-    
     try {
       await login(email, password);
-      toast.success('¡Bienvenido!');
+      toast.success('Welcome!');
       navigate("/home");
     } catch (error) {
-      setError(error.message || 'Error al iniciar sesión');
-      toast.error(error.message || 'Error al iniciar sesión');
+      setError(error.message || 'Login error. Please try again.');
+      toast.error(error.message || 'Login error. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div
-      style={{
-        height: "100vh",
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        backgroundImage:
-          "url('https://images.unsplash.com/photo-1500530855697-b586d89ba3ee')",
-        backgroundSize: "cover",
-        backgroundPosition: "center",
-      }}
-    >
-      <style>
-        {`
-          .glass-card {
-            width: 420px;
-            padding: 45px;
-            border-radius: 20px;
-            background: rgba(14, 90, 97, 0.25);
-            backdrop-filter: blur(18px);
-            -webkit-backdrop-filter: blur(18px);
-            border: 1px solid rgba(255, 255, 255, 0.35);
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
-            color: white;
-            text-align: center;
-          }
+    <>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Lato:wght@300;400;700&display=swap');
 
-          .input-container {
-            position: relative;
-            margin-bottom: 20px;
-          }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
 
-          .input {
-            width: 100%;
-            height: 50px;
-            padding: 0 50px;
-            border-radius: 12px;
-            border: 1px solid rgba(255,255,255,0.35);
-            background: rgba(255,255,255,0.08);
-            color: white;
-            outline: none;
-            font-size: 14px;
-            box-sizing: border-box;
-            transition: all 0.3s;
-          }
+        .login-root {
+          display: flex;
+          height: 100vh;
+          width: 100vw;
+          font-family: 'Lato', sans-serif;
+          overflow: hidden;
+        }
 
-          .input:focus {
-            background: rgba(255,255,255,0.15);
-            border-color: rgba(255,255,255,0.6);
-          }
+        /* ── PANEL IZQUIERDO ── */
+        .login-left {
+          width: 52%;
+          background: #1a5490;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          position: relative;
+          overflow: hidden;
+          padding: 48px 32px;
+        }
 
-          .input::placeholder {
-            color: rgba(255,255,255,0.7);
-          }
+        .login-left::before {
+          content: '';
+          position: absolute;
+          inset: 0;
+          background:
+            radial-gradient(ellipse at 20% 20%, rgba(255,255,255,0.07) 0%, transparent 55%),
+            radial-gradient(ellipse at 80% 80%, rgba(0,0,0,0.18) 0%, transparent 55%);
+        }
 
-          .icon-left {
-            position: absolute;
-            top: 50%;
-            left: 18px;
-            transform: translateY(-50%);
-            color: white;
-            font-size: 16px;
-            opacity: 0.9;
-          }
+        .login-left::after {
+          content: '';
+          position: absolute;
+          inset: 0;
+          background-image: radial-gradient(rgba(255,255,255,0.08) 1px, transparent 1px);
+          background-size: 28px 28px;
+        }
 
-          .icon-right {
-            position: absolute;
-            top: 50%;
-            right: 18px;
-            transform: translateY(-50%);
-            color: white;
-            font-size: 16px;
-            cursor: pointer;
-            opacity: 0.9;
-            transition: opacity 0.2s;
-          }
+        .left-content {
+          position: relative;
+          z-index: 2;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          text-align: center;
+          animation: fadeSlideUp 0.8s ease both;
+          width: 100%;
+        }
 
-          .icon-right:hover {
-            opacity: 1;
-          }
+        .logo-wrap {
+          width: 80%;
+          max-width: 100px;
+          overflow: hidden;
+          display: flex;
+          justify-content: flex-start;
+          margin-bottom: 28px;
+        }
 
-          .btn {
-            width: 100%;
-            height: 50px;
-            border-radius: 12px;
-            border: none;
-            background: linear-gradient(135deg, #0E5A61, #15777F);
-            color: white;
-            font-size: 15px;
-            cursor: pointer;
-            transition: 0.3s;
-            margin-top: 10px;
-            font-weight: 600;
-          }
+        .church-logo {
+          width: 105%;
+          height: auto;
+          filter: brightness(0) invert(1);
+          display: block;
+        }
 
-          .btn:hover:not(:disabled) {
-            opacity: 0.85;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(21, 119, 127, 0.4);
-          }
+        .church-name {
+          font-family: 'Cinzel', serif;
+          font-size: 40px;
+          font-weight: 700;
+          color: #ffffff;
+          letter-spacing: 2px;
+          line-height: 1.2;
+          margin-bottom: 12px;
+          text-shadow: 0 2px 12px rgba(0,0,0,0.3);
+        }
 
-          .btn:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-          }
+        .church-subtitle {
+          font-family: 'Lato', sans-serif;
+          font-size: 13px;
+          font-weight: 300;
+          color: rgba(255,255,255,0.75);
+          letter-spacing: 3px;
+          text-transform: uppercase;
+          margin-bottom: 48px;
+        }
 
-          .error {
-            background: rgba(255,0,0,0.2);
-            padding: 10px;
-            border-radius: 8px;
-            margin-bottom: 15px;
-            font-size: 13px;
-            border: 1px solid rgba(255,0,0,0.3);
-          }
+        .divider-left {
+          width: 60px;
+          height: 2px;
+          background: rgba(255,255,255,0.35);
+          margin-bottom: 40px;
+        }
 
-          .forgot-password {
-            margin-top: 15px;
-            color: rgba(255,255,255,0.8);
-            font-size: 13px;
-            cursor: pointer;
-            transition: color 0.2s;
-          }
+        .verse {
+          font-family: 'Lato', sans-serif;
+          font-size: 14px;
+          font-style: italic;
+          color: rgba(255,255,255,0.65);
+          max-width: 320px;
+          line-height: 1.8;
+        }
 
-          .forgot-password:hover {
-            color: white;
-            text-decoration: underline;
-          }
+        .verse span {
+          display: block;
+          margin-top: 10px;
+          font-style: normal;
+          font-weight: 700;
+          color: rgba(255,255,255,0.45);
+          font-size: 12px;
+          letter-spacing: 1px;
+        }
 
-          .demo-info {
-            margin-top: 25px;
-            padding: 15px;
-            background: rgba(255,255,255,0.1);
-            border-radius: 10px;
-            font-size: 12px;
-            text-align: left;
-          }
+        .geo-tl, .geo-br {
+          position: absolute;
+          width: 220px;
+          height: 220px;
+          border: 1.5px solid rgba(255,255,255,0.10);
+          border-radius: 50%;
+          z-index: 1;
+        }
+        .geo-tl { top: -80px; left: -80px; }
+        .geo-br { bottom: -80px; right: -80px; }
 
-          .demo-info strong {
-            display: block;
-            margin-bottom: 8px;
-            font-size: 13px;
-          }
-        `}
-      </style>
+        /* ── PANEL DERECHO ── */
+        .login-right {
+          width: 48%;
+          background: #f8f9fc;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          padding: 56px 64px;
+          position: relative;
+        }
 
-      <div className="glass-card">
-        <h2 style={{ marginBottom: "10px", fontWeight: "600", fontSize: "28px" }}>
-          Emanuel Church
-        </h2>
+        .login-right::before {
+          content: '';
+          position: absolute;
+          top: 0; left: 0;
+          width: 4px;
+          height: 100%;
+          background: linear-gradient(180deg, #1a5490 0%, #2a72b8 50%, #1a5490 100%);
+        }
 
-        <p style={{ marginBottom: "30px", opacity: 0.9 }}>
-          Bienvenido a la OA Mundial
-        </p>
+        .form-wrapper {
+          width: 100%;
+          max-width: 380px;
+          animation: fadeSlideUp 0.9s 0.1s ease both;
+        }
 
-        {error && <div className="error">{error}</div>}
+        .form-greeting {
+          font-family: 'Cinzel', serif;
+          font-size: 28px;
+          font-weight: 600;
+          color: #1a2d5a;
+          margin-bottom: 6px;
+        }
 
-        <form onSubmit={hacerLogin}>
-          <div className="input-container">
-            <FaUser className="icon-left" />
-            <input
-              type="email"
-              placeholder="Email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="input"
-              disabled={loading}
-            />
+        .form-desc {
+          font-size: 13px;
+          color: #8a97b0;
+          margin-bottom: 36px;
+          letter-spacing: 0.3px;
+        }
+
+        .field-label {
+          display: block;
+          font-size: 11px;
+          font-weight: 700;
+          letter-spacing: 1.5px;
+          text-transform: uppercase;
+          color: #5a6a85;
+          margin-bottom: 8px;
+        }
+
+        .field-wrap {
+          position: relative;
+          margin-bottom: 22px;
+        }
+
+        .field-icon {
+          position: absolute;
+          top: 50%;
+          left: 16px;
+          transform: translateY(-50%);
+          color: #1a5490;
+          font-size: 14px;
+          opacity: 0.7;
+        }
+
+        .field-input {
+          width: 100%;
+          height: 52px;
+          padding: 0 48px;
+          border: 1.5px solid #dde3ef;
+          border-radius: 10px;
+          background: #ffffff;
+          color: #1a2d5a;
+          font-size: 14px;
+          font-family: 'Lato', sans-serif;
+          outline: none;
+          transition: border-color 0.25s, box-shadow 0.25s;
+        }
+
+        .field-input:focus {
+          border-color: #1a5490;
+          box-shadow: 0 0 0 3px rgba(26,84,144,0.1);
+        }
+
+        .field-input::placeholder { color: #b0bcd0; }
+
+        .eye-btn {
+          position: absolute;
+          top: 50%;
+          right: 16px;
+          transform: translateY(-50%);
+          background: none;
+          border: none;
+          cursor: pointer;
+          color: #8a97b0;
+          font-size: 15px;
+          padding: 4px;
+          transition: color 0.2s;
+        }
+        .eye-btn:hover { color: #1a5490; }
+
+        .error-box {
+          background: #fff2f2;
+          border: 1px solid #ffc5c5;
+          border-radius: 8px;
+          padding: 10px 14px;
+          font-size: 13px;
+          color: #c0392b;
+          margin-bottom: 18px;
+        }
+
+        .btn-login {
+          width: 100%;
+          height: 52px;
+          border-radius: 10px;
+          border: none;
+          background: linear-gradient(135deg, #1a5490 0%, #2a72b8 100%);
+          color: white;
+          font-size: 14px;
+          font-weight: 700;
+          letter-spacing: 1.5px;
+          text-transform: uppercase;
+          font-family: 'Lato', sans-serif;
+          cursor: pointer;
+          transition: transform 0.2s, box-shadow 0.2s, opacity 0.2s;
+          margin-top: 8px;
+          box-shadow: 0 4px 18px rgba(26,84,144,0.3);
+        }
+
+        .btn-login:hover:not(:disabled) {
+          transform: translateY(-2px);
+          box-shadow: 0 8px 24px rgba(26,84,144,0.4);
+        }
+
+        .btn-login:disabled { opacity: 0.6; cursor: not-allowed; }
+
+        .forgot-wrap {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 10px;
+          margin-top: 24px;
+        }
+        .forgot-line { flex: 1; height: 1px; background: #dde3ef; }
+        .forgot {
+          font-size: 11px;
+          font-weight: 700;
+          letter-spacing: 1px;
+          text-transform: uppercase;
+          color: #1a5490;
+          cursor: pointer;
+          transition: opacity 0.2s;
+          white-space: nowrap;
+        }
+        .forgot:hover { opacity: 0.65; }
+
+        /* ── PERDOMOSOFT ── */
+        .footer-brand {
+          position: absolute;
+          bottom: 20px;
+          font-size: 11px;
+          color: #c0cad8;
+          letter-spacing: 0.5px;
+          opacity: 0.6;
+          transition: opacity 0.3s;
+          user-select: none;
+        }
+        .footer-brand:hover { opacity: 1; }
+
+        /* ── LOADER ── */
+        .spinner {
+          display: inline-block;
+          width: 16px;
+          height: 16px;
+          border: 2px solid rgba(255,255,255,0.4);
+          border-top-color: white;
+          border-radius: 50%;
+          animation: spin 0.7s linear infinite;
+          margin-right: 8px;
+          vertical-align: middle;
+        }
+
+        @keyframes fadeSlideUp {
+          from { opacity: 0; transform: translateY(24px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* ── RESPONSIVE ── */
+        @media (max-width: 768px) {
+          .login-root { flex-direction: column; }
+          .login-left { width: 100%; min-height: 260px; padding: 32px 24px; }
+          .logo-wrap { width: 65%; max-width: 260px; }
+          .church-name { font-size: 22px; }
+          .verse { display: none; }
+          .login-right { width: 100%; padding: 36px 28px; }
+          .login-right::before { width: 100%; height: 4px; top: 0; left: 0; }
+        }
+      `}</style>
+
+      <div className="login-root">
+
+        {/* ── PANEL IZQUIERDO ── */}
+        <div className="login-left">
+          <div className="geo-tl" />
+          <div className="geo-br" />
+          <div className="left-content">
+
+            {/* Contenedor recortado para centrar el logo visualmente */}
+            <div className="logo-wrap">
+              <img
+                src="/Logo_RD-removebg-preview.png"
+                alt="Emanuel Church Logo"
+                className="church-logo"
+                onError={(e) => { e.target.parentElement.style.display = 'none'; }}
+              />
+            </div>
+
+            <h1 className="church-name">Emanuel Church</h1>
+            <p className="church-subtitle">Management System</p>
+            <div className="divider-left" />
+            <p className="verse">
+              "I can do all things through Christ who strengthens me."
+              <span>— Philippians 4:13</span>
+            </p>
           </div>
+        </div>
 
-          <div className="input-container">
-            <FaLock className="icon-left" />
-            <input
-              type={mostrarPassword ? "text" : "password"}
-              placeholder="Contraseña"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="input"
-              disabled={loading}
-            />
-            <div
-              className="icon-right"
-              onClick={() => setMostrarPassword(!mostrarPassword)}
-            >
-              {mostrarPassword ? <FaEyeSlash /> : <FaEye />}
+        {/* ── PANEL DERECHO ── */}
+        <div className="login-right">
+          <div className="form-wrapper">
+            <h2 className="form-greeting">Welcome</h2>
+            <p className="form-desc">Enter your credentials to continue</p>
+
+            {error && <div className="error-box">{error}</div>}
+
+            <form onSubmit={hacerLogin}>
+              <div>
+                <label className="field-label">Email Address</label>
+                <div className="field-wrap">
+                  <FaEnvelope className="field-icon" />
+                  <input
+                    type="email"
+                    placeholder="admin@sistema.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="field-input"
+                    disabled={loading}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="field-label">Password</label>
+                <div className="field-wrap">
+                  <FaLock className="field-icon" />
+                  <input
+                    type={mostrarPassword ? "text" : "password"}
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="field-input"
+                    disabled={loading}
+                  />
+                  <button
+                    type="button"
+                    className="eye-btn"
+                    onClick={() => setMostrarPassword(!mostrarPassword)}
+                  >
+                    {mostrarPassword ? <FaEyeSlash /> : <FaEye />}
+                  </button>
+                </div>
+              </div>
+
+              <button type="submit" className="btn-login" disabled={loading}>
+                {loading && <span className="spinner" />}
+                {loading ? 'Verifying...' : 'Sign In'}
+              </button>
+            </form>
+
+            <div className="forgot-wrap">
+              <div className="forgot-line" />
+              <p className="forgot" onClick={() => navigate('/forgot-password')}>
+                Forgot your password?
+              </p>
+              <div className="forgot-line" />
             </div>
           </div>
 
-          <button type="submit" className="btn" disabled={loading}>
-            {loading ? 'Iniciando...' : 'Iniciar Sesión'}
-          </button>
-        </form>
-
-        <div 
-          className="forgot-password"
-          onClick={() => navigate('/forgot-password')}
-        >
-          ¿Olvidaste tu contraseña?
+          {/* ── PERDOMOSOFT ── */}
+          <p className="footer-brand">© 2025 Emanuel Church · OA Mundial</p>
         </div>
 
-        {/* Información de credenciales de demostración */}
-        <div className="demo-info">
-          <strong>Credenciales de prueba:</strong>
-          <div>Email: admin@sistema.com</div>
-          <div>Contraseña: 1234</div>
-        </div>
       </div>
-    </div>
+    </>
   );
 }

@@ -5,6 +5,31 @@ import toast from 'react-hot-toast';
 import miembrosService from '../services/MiembrosService';
 import administracionService from '../services/AdministracionService';
 
+const PRIMARY = "#1a5490";
+const PRIMARY_LIGHT = "#2a72b8";
+
+const inputStyle = {
+  width: "100%",
+  padding: "10px 12px",
+  border: "1.5px solid #dde3ef",
+  borderRadius: "8px",
+  fontSize: "16px",
+  fontFamily: "'Lato', sans-serif",
+  color: "#1a2d5a",
+  outline: "none",
+  boxSizing: "border-box"
+};
+
+const labelStyle = {
+  display: "block",
+  marginBottom: "5px",
+  fontWeight: "700",
+  fontSize: "14px",
+  letterSpacing: "1px",
+  textTransform: "capitalize",
+  color: "#5a6a85"
+};
+
 export default function Miembros() {
   const navigate = useNavigate();
   const [miembros, setMiembros] = useState([]);
@@ -13,7 +38,10 @@ export default function Miembros() {
   const [loading, setLoading] = useState(true);
   const [mostrarModal, setMostrarModal] = useState(false);
   const [miembroEditando, setMiembroEditando] = useState(null);
-  const [formData, setFormData] = useState({
+  const [pestanaActiva, setPestanaActiva] = useState('basic');
+
+  const emptyForm = {
+    // Básicos
     nombre: '',
     identidad: '',
     pais_id: '',
@@ -26,10 +54,18 @@ export default function Miembros() {
     comentarios: '',
     cargo_funcion: '',
     avance_audio: '',
-    ministerio_of: ''
-  });
+    ministerio_of: '',
+    // Extra (Jasen)
+    nombre_padre: '',
+    telefono_padre: '',
+    nombre_madre: '',
+    telefono_madre: '',
+    tipo_sangre: '',
+    correo: ''
+  };
 
-  // Cargar países y miembros al inicio
+  const [formData, setFormData] = useState(emptyForm);
+
   useEffect(() => {
     cargarDatos();
   }, []);
@@ -44,8 +80,8 @@ export default function Miembros() {
       setMiembros(miembrosData);
       setPaises(paisesData);
     } catch (error) {
-      console.error('Error al cargar datos:', error);
-      toast.error('Error al cargar datos');
+      console.error('Error loading data:', error);
+      toast.error('Error loading data');
     } finally {
       setLoading(false);
     }
@@ -59,41 +95,40 @@ export default function Miembros() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
     try {
       if (miembroEditando) {
         await miembrosService.update(miembroEditando.id, formData);
-        toast.success('Miembro actualizado');
+        toast.success('Member updated');
       } else {
         await miembrosService.create(formData);
-        toast.success('Miembro creado');
+        toast.success('Member created');
       }
-      
       cargarDatos();
       cerrarModal();
     } catch (error) {
       console.error('Error:', error);
-      toast.error(error.response?.data?.error || 'Error al guardar miembro');
+      toast.error(error.response?.data?.error || 'Error saving member');
     }
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm("¿Estás seguro de eliminar este miembro?")) {
+    if (window.confirm("Are you sure you want to delete this member?")) {
       try {
         await miembrosService.delete(id);
-        toast.success("Miembro eliminado");
+        toast.success("Member deleted");
         cargarDatos();
       } catch (error) {
-        toast.error('Error al eliminar');
+        toast.error('Error deleting member');
       }
     }
   };
 
   const abrirModal = (miembro = null) => {
+    setPestanaActiva('basic');
     if (miembro) {
       setMiembroEditando(miembro);
       setFormData({
-        nombre: miembro.nombre,
+        nombre: miembro.nombre || '',
         identidad: miembro.identidad || '',
         pais_id: miembro.pais_id || '',
         ciudad: miembro.ciudad || '',
@@ -105,25 +140,17 @@ export default function Miembros() {
         comentarios: miembro.comentarios || '',
         cargo_funcion: miembro.cargo_funcion || '',
         avance_audio: miembro.avance_audio || '',
-        ministerio_of: miembro.ministerio_of || ''
+        ministerio_of: miembro.ministerio_of || '',
+        nombre_padre: miembro.nombre_padre || '',
+        telefono_padre: miembro.telefono_padre || '',
+        nombre_madre: miembro.nombre_madre || '',
+        telefono_madre: miembro.telefono_madre || '',
+        tipo_sangre: miembro.tipo_sangre || '',
+        correo: miembro.correo || ''
       });
     } else {
       setMiembroEditando(null);
-      setFormData({
-        nombre: '',
-        identidad: '',
-        pais_id: '',
-        ciudad: '',
-        edad: '',
-        tipo_miembro: 'Registrado',
-        evangelizado_por: '',
-        estado_civil: '',
-        profesion: '',
-        comentarios: '',
-        cargo_funcion: '',
-        avance_audio: '',
-        ministerio_of: ''
-      });
+      setFormData(emptyForm);
     }
     setMostrarModal(true);
   };
@@ -131,74 +158,138 @@ export default function Miembros() {
   const cerrarModal = () => {
     setMostrarModal(false);
     setMiembroEditando(null);
+    setPestanaActiva('basic');
+  };
+
+  const set = (field) => (e) => setFormData({ ...formData, [field]: e.target.value });
+
+  const tipoBadge = (tipo) => {
+    const map = {
+      Comprometido: '#4CAF50',
+      Registrado:   '#2196F3',
+      Voluntario:   '#FF9800'
+    };
+    return map[tipo] || '#999';
   };
 
   return (
-    <div style={{ minHeight: "100vh", background: "linear-gradient(135deg, #0E5A61, #15777F)", padding: "20px" }}>
+    <div style={{
+      minHeight: "100vh",
+      background: `linear-gradient(135deg, ${PRIMARY}, ${PRIMARY_LIGHT})`,
+      padding: "20px",
+      fontFamily: "'Lato', sans-serif"
+    }}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Lato:wght@300;400;700&display=swap');
+
+        .mbr-input:focus {
+          border-color: ${PRIMARY} !important;
+          box-shadow: 0 0 0 3px rgba(26,84,144,0.1);
+        }
+        .tab-btn {
+          flex: 1;
+          padding: 10px;
+          border: none;
+          background: #f0f4fa;
+          color: #5a6a85;
+          font-family: 'Lato', sans-serif;
+          font-size: 12px;
+          font-weight: 700;
+          letter-spacing: 1px;
+          text-transform: capitalize;
+          cursor: pointer;
+          transition: all 0.2s;
+          border-bottom: 3px solid transparent;
+        }
+        .tab-btn.active {
+          background: white;
+          color: ${PRIMARY};
+          border-bottom-color: ${PRIMARY};
+        }
+        .tab-btn:first-child { border-radius: 8px 0 0 0; }
+        .tab-btn:last-child  { border-radius: 0 8px 0 0; }
+        .row-hover:hover { background: #f5f8ff !important; }
+      `}</style>
+
       <div style={{ maxWidth: "1400px", margin: "0 auto" }}>
-        {/* Header */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "30px" }}>
+
+        {/* ── HEADER ── */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "28px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "15px" }}>
-            <button onClick={() => navigate("/home")} style={{ background: "rgba(255,255,255,0.2)", border: "none", borderRadius: "8px", padding: "10px 15px", color: "white", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px" }}>
-              <FaArrowLeft /> Volver
+            <button
+              onClick={() => navigate("/home")}
+              style={{ background: "rgba(255,255,255,0.18)", backdropFilter: "blur(10px)", border: "none", borderRadius: "10px", padding: "18px 20px", color: "white", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px", fontFamily: "'Lato', sans-serif", fontWeight: "700", fontSize: "13px" }}
+            >
+              <FaArrowLeft /> Back
             </button>
-            <h1 style={{ color: "white", margin: 0 }}>Gestión de Miembros</h1>
+            <div>
+              <h1 style={{ color: "white", margin: 0, fontFamily: "'Cinzel', serif", fontSize: "26px", fontWeight: "700", letterSpacing: "1px" }}>
+                Member Management
+              </h1>
+            </div>
           </div>
-          <button onClick={() => abrirModal()} style={{ background: "#4CAF50", border: "none", borderRadius: "8px", padding: "12px 20px", color: "white", cursor: "pointer", fontWeight: "600", display: "flex", alignItems: "center", gap: "8px" }}>
-            <FaPlus /> Agregar Miembro
+
+          <button
+            onClick={() => abrirModal()}
+            style={{ background: "#4CAF50", border: "none", borderRadius: "10px", padding: "12px 22px", color: "white", cursor: "pointer", fontWeight: "700", fontFamily: "'Lato', sans-serif", display: "flex", alignItems: "center", gap: "8px", fontSize: "14px", boxShadow: "0 4px 12px rgba(76,175,80,0.3)" }}
+          >
+            <FaPlus /> Add Member
           </button>
         </div>
 
-        {/* Filtro */}
-        <div style={{ background: "white", padding: "20px", borderRadius: "12px", marginBottom: "20px" }}>
-          <input type="text" placeholder="Buscar por nombre, país o ciudad..." value={filtro} onChange={(e) => setFiltro(e.target.value)} style={{ width: "100%", padding: "12px", border: "1px solid #ddd", borderRadius: "8px", fontSize: "14px" }} />
+        {/* ── BUSCADOR ── */}
+        <div style={{ background: "white", padding: "18px 20px", borderRadius: "14px", marginBottom: "20px", boxShadow: "0 2px 12px rgba(0,0,0,0.08)" }}>
+          <input
+            type="text"
+            placeholder="Search by name, country or city..."
+            value={filtro}
+            onChange={(e) => setFiltro(e.target.value)}
+            style={{ ...inputStyle, border: "1.5px solid #dde3ef" }}
+            className="mbr-input"
+          />
         </div>
 
-        {/* Tabla */}
+        {/* ── TABLA ── */}
         {loading ? (
-          <div style={{ background: "white", padding: "40px", borderRadius: "12px", textAlign: "center" }}>
-            Cargando...
-          </div>
+          <div style={{ textAlign: "center", color: "white", padding: "60px", fontSize: "16px" }}>Loading...</div>
         ) : (
-          <div style={{ background: "white", borderRadius: "12px", overflow: "hidden", boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }}>
+          <div style={{ background: "white", borderRadius: "14px", overflow: "hidden", boxShadow: "0 4px 20px rgba(0,0,0,0.1)" }}>
             <div style={{ overflowX: "auto" }}>
               <table style={{ width: "100%", borderCollapse: "collapse" }}>
                 <thead>
-                  <tr style={{ background: "#f5f5f5" }}>
-                    <th style={{ padding: "15px", textAlign: "left", fontWeight: "600" }}>Nombre</th>
-                    <th style={{ padding: "15px", textAlign: "left", fontWeight: "600" }}>Identidad</th>
-                    <th style={{ padding: "15px", textAlign: "left", fontWeight: "600" }}>País</th>
-                    <th style={{ padding: "15px", textAlign: "left", fontWeight: "600" }}>Ciudad</th>
-                    <th style={{ padding: "15px", textAlign: "left", fontWeight: "600" }}>Edad</th>
-                    <th style={{ padding: "15px", textAlign: "left", fontWeight: "600" }}>Tipo</th>
-                    <th style={{ padding: "15px", textAlign: "center", fontWeight: "600" }}>Acciones</th>
+                  <tr style={{ background: "#72a9e9", borderBottom: "2px solid #dde3ef" }}>
+                    {["Name", "ID", "Country", "City", "Age", "Type", "Actions"].map(col => (
+                      <th key={col} style={{ padding: "14px 16px", color: "white", textAlign: col === "Actions" ? "center" : "left", fontFamily: "'Lato', sans-serif", fontWeight: "700", fontSize: "14px", letterSpacing: "1px", textTransform: "capitalize", color: PRIMARY }}>
+                        {col}
+                      </th>
+                    ))}
                   </tr>
                 </thead>
                 <tbody>
                   {miembrosFiltrados.length === 0 ? (
                     <tr>
-                      <td colSpan="7" style={{ padding: "40px", textAlign: "center", color: "#999" }}>
-                        No hay miembros registrados
+                      <td colSpan="7" style={{ padding: "40px", textAlign: "center", color: "#8a97b0", fontFamily: "'Lato', sans-serif" }}>
+                        No members found.
                       </td>
                     </tr>
                   ) : (
-                    miembrosFiltrados.map((miembro) => (
-                      <tr key={miembro.id} style={{ borderTop: "1px solid #eee" }}>
-                        <td style={{ padding: "15px" }}>{miembro.nombre}</td>
-                        <td style={{ padding: "15px" }}>{miembro.identidad || '-'}</td>
-                        <td style={{ padding: "15px" }}>{miembro.pais_nombre || '-'}</td>
-                        <td style={{ padding: "15px" }}>{miembro.ciudad || '-'}</td>
-                        <td style={{ padding: "15px" }}>{miembro.edad || '-'}</td>
-                        <td style={{ padding: "15px" }}>
-                          <span style={{ background: miembro.tipo_miembro === 'Comprometido' ? '#4CAF50' : miembro.tipo_miembro === 'Registrado' ? '#2196F3' : '#FF9800', color: "white", padding: "4px 12px", borderRadius: "12px", fontSize: "12px" }}>
+                    miembrosFiltrados.map((miembro, i) => (
+                      <tr key={miembro.id} className="row-hover" style={{ borderBottom: "1px solid #eef2f7", background: i % 2 === 0 ? "white" : "#fafbfd" }}>
+                        <td style={{ padding: "14px 16px", fontWeight: "600", color: "#1a2d5a", fontFamily: "'Lato', sans-serif" }}>{miembro.nombre}</td>
+                        <td style={{ padding: "14px 16px", color: "#5a6a85", fontSize: "13px" }}>{miembro.identidad}</td>
+                        <td style={{ padding: "14px 16px", color: "#5a6a85" }}>{miembro.pais_nombre}</td>
+                        <td style={{ padding: "14px 16px", color: "#5a6a85" }}>{miembro.ciudad}</td>
+                        <td style={{ padding: "14px 16px", color: "#5a6a85" }}>{miembro.edad}</td>
+                        <td style={{ padding: "14px 16px" }}>
+                          <span style={{ background: tipoBadge(miembro.tipo_miembro), color: "white", padding: "4px 12px", borderRadius: "20px", fontSize: "13px", fontWeight: "700", letterSpacing: "0.5px" }}>
                             {miembro.tipo_miembro}
                           </span>
                         </td>
-                        <td style={{ padding: "15px", textAlign: "center" }}>
-                          <button onClick={() => abrirModal(miembro)} style={{ background: "#2196F3", border: "none", borderRadius: "6px", padding: "6px 12px", color: "white", cursor: "pointer", marginRight: "8px" }}>
+                        <td style={{ padding: "14px 16px", textAlign: "center" }}>
+                          <button onClick={() => abrirModal(miembro)} style={{ background: PRIMARY, border: "none", borderRadius: "7px", padding: "7px 13px", color: "white", cursor: "pointer", marginRight: "8px" }}>
                             <FaEdit />
                           </button>
-                          <button onClick={() => handleDelete(miembro.id)} style={{ background: "#f44336", border: "none", borderRadius: "6px", padding: "6px 12px", color: "white", cursor: "pointer" }}>
+                          <button onClick={() => handleDelete(miembro.id)} style={{ background: "#f44336", border: "none", borderRadius: "7px", padding: "7px 13px", color: "white", cursor: "pointer" }}>
                             <FaTrash />
                           </button>
                         </td>
@@ -211,129 +302,214 @@ export default function Miembros() {
           </div>
         )}
 
-        <p style={{ color: "white", textAlign: "center", marginTop: "20px", fontSize: "13px" }}>
-          Total de miembros: {miembrosFiltrados.length}
+        <p style={{ color: "rgba(255,255,255,0.7)", textAlign: "center", marginTop: "20px", fontSize: "14px", letterSpacing: "0.5px" }}>
+          Total members: {miembrosFiltrados.length}
         </p>
       </div>
 
-      {/* Modal */}
+      {/* ── MODAL ── */}
       {mostrarModal && (
-        <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.5)", display: "flex", justifyContent: "center", alignItems: "center", zIndex: 1000 }}>
-          <div style={{ background: "white", borderRadius: "12px", padding: "30px", width: "90%", maxWidth: "700px", maxHeight: "90vh", overflowY: "auto" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
-              <h2 style={{ margin: 0 }}>{miembroEditando ? 'Editar Miembro' : 'Nuevo Miembro'}</h2>
-              <button onClick={cerrarModal} style={{ background: "none", border: "none", fontSize: "24px", cursor: "pointer", color: "#666" }}>
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", display: "flex", justifyContent: "center", alignItems: "center", zIndex: 1000, padding: "20px" }}>
+          <div style={{ background: "white", borderRadius: "16px", width: "100%", maxWidth: "720px", maxHeight: "90vh", overflowY: "auto", boxShadow: "0 20px 60px rgba(0,0,0,0.3)" }}>
+
+            {/* Modal header */}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "24px 28px 16px", borderBottom: "1px solid #eef2f7" }}>
+              <h2 style={{ margin: 0, fontFamily: "'Cinzel', serif", fontSize: "20px", color: PRIMARY }}>
+                {miembroEditando ? 'Edit Member' : 'New Member'}
+              </h2>
+              <button onClick={cerrarModal} style={{ background: "none", border: "none", fontSize: "22px", cursor: "pointer", color: "#8a97b0" }}>
                 <FaTimes />
               </button>
             </div>
 
+            {/* Pestañas */}
+            <div style={{ display: "flex", borderBottom: "1px solid #eef2f7" }}>
+              <button className={`tab-btn ${pestanaActiva === 'basic' ? 'active' : ''}`} onClick={() => setPestanaActiva('basic')}>
+                Basic Info
+              </button>
+              <button className={`tab-btn ${pestanaActiva === 'extra' ? 'active' : ''}`} onClick={() => setPestanaActiva('extra')}>
+                Extra Info
+              </button>
+            </div>
+
             <form onSubmit={handleSubmit}>
-              {/* Datos Básicos */}
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "15px", marginBottom: "15px" }}>
-                <div>
-                  <label style={{ display: "block", marginBottom: "5px", fontWeight: "600" }}>Nombre *</label>
-                  <input type="text" required value={formData.nombre} onChange={(e) => setFormData({...formData, nombre: e.target.value})} style={{ width: "100%", padding: "10px", border: "1px solid #ddd", borderRadius: "6px" }} />
-                </div>
+              <div style={{ padding: "24px 28px" }}>
 
-                <div>
-                  <label style={{ display: "block", marginBottom: "5px", fontWeight: "600" }}>Identidad</label>
-                  <input type="text" value={formData.identidad} onChange={(e) => setFormData({...formData, identidad: e.target.value})} style={{ width: "100%", padding: "10px", border: "1px solid #ddd", borderRadius: "6px" }} />
-                </div>
+                {/* ── PESTAÑA BASIC INFO ── */}
+                {pestanaActiva === 'basic' && (
+                  <>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", marginBottom: "16px" }}>
+                      <div>
+                        <label style={labelStyle}>Full Name *</label>
+                        <input className="mbr-input" type="text" required value={formData.nombre} onChange={set('nombre')} style={inputStyle} placeholder="Full name" />
+                      </div>
+                      <div>
+                        <label style={labelStyle}>ID / Identity</label>
+                        <input className="mbr-input" type="text" value={formData.identidad} onChange={set('identidad')} style={inputStyle} placeholder="ID number" />
+                      </div>
+                    </div>
+
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", marginBottom: "16px" }}>
+                      <div>
+                        <label style={labelStyle}>Country *</label>
+                        <select required value={formData.pais_id} onChange={set('pais_id')} style={inputStyle} className="mbr-input">
+                          <option value="">Select country...</option>
+                          {paises.map(pais => (
+                            <option key={pais.id} value={pais.id}>{pais.nombre}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label style={labelStyle}>City</label>
+                        <input className="mbr-input" type="text" value={formData.ciudad} onChange={set('ciudad')} style={inputStyle} placeholder="City" />
+                      </div>
+                    </div>
+
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "16px", marginBottom: "16px" }}>
+                      <div>
+                        <label style={labelStyle}>Age</label>
+                        <input className="mbr-input" type="number" value={formData.edad} onChange={set('edad')} style={inputStyle} />
+                      </div>
+                      <div>
+                        <label style={labelStyle}>Marital Status</label>
+                        <select value={formData.estado_civil} onChange={set('estado_civil')} style={inputStyle} className="mbr-input">
+                          <option value="">Select...</option>
+                          <option value="Single">Single</option>
+                          <option value="Married">Married</option>
+                          <option value="Divorced">Divorced</option>
+                          <option value="Widowed">Widowed</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label style={labelStyle}>Profession</label>
+                        <input className="mbr-input" type="text" value={formData.profesion} onChange={set('profesion')} style={inputStyle} placeholder="Profession" />
+                      </div>
+                    </div>
+
+                    <div style={{ marginBottom: "16px" }}>
+                      <label style={labelStyle}>Evangelized By</label>
+                      <input className="mbr-input" type="text" value={formData.evangelizado_por} onChange={set('evangelizado_por')} style={inputStyle} placeholder="Name of person who evangelized" />
+                    </div>
+
+                    <div style={{ marginBottom: "16px" }}>
+                      <label style={labelStyle}>Member Type *</label>
+                      <select required value={formData.tipo_miembro} onChange={set('tipo_miembro')} style={inputStyle} className="mbr-input">
+                      <option value="Registrado">Registered (RM)</option>
+                      <option value="Comprometido">Committed (CM)</option>
+                      <option value="Voluntario">Volunteer (VM)</option>
+                      </select>
+                    </div>
+
+                    {formData.tipo_miembro === 'Comprometido' && (
+                      <div style={{ marginBottom: "16px", padding: "16px", background: "#e8f5e9", borderRadius: "10px", border: "1px solid #a5d6a7" }}>
+                        <label style={{ ...labelStyle, color: "#2e7d32" }}>Role / Function</label>
+                        <input className="mbr-input" type="text" value={formData.cargo_funcion} onChange={set('cargo_funcion')} style={{ ...inputStyle, border: "1.5px solid #a5d6a7" }} placeholder="e.g. Pastor, Cell Leader..." />
+                      </div>
+                    )}
+
+                    {formData.tipo_miembro === 'Registrado' && (
+                      <div style={{ marginBottom: "16px", padding: "16px", background: "#e3f2fd", borderRadius: "10px", border: "1px solid #90caf9" }}>
+                        <label style={{ ...labelStyle, color: "#1565c0" }}>Audio Progress</label>
+                        <input className="mbr-input" type="text" value={formData.avance_audio} onChange={set('avance_audio')} style={{ ...inputStyle, border: "1.5px solid #90caf9" }} placeholder="e.g. Audio 5, Lesson 3..." />
+                      </div>
+                    )}
+
+                    {formData.tipo_miembro === 'Voluntario' && (
+                      <div style={{ marginBottom: "16px", padding: "16px", background: "#fff3e0", borderRadius: "10px", border: "1px solid #ffcc80" }}>
+                        <div style={{ marginBottom: "12px" }}>
+                          <label style={{ ...labelStyle, color: "#e65100" }}>Ministry OF</label>
+                          <input className="mbr-input" type="text" value={formData.ministerio_of} onChange={set('ministerio_of')} style={{ ...inputStyle, border: "1.5px solid #ffcc80" }} placeholder="e.g. Worship, Multimedia..." />
+                        </div>
+                        <div>
+                          <label style={{ ...labelStyle, color: "#e65100" }}>Audio Progress</label>
+                          <input className="mbr-input" type="text" value={formData.avance_audio} onChange={set('avance_audio')} style={{ ...inputStyle, border: "1.5px solid #ffcc80" }} placeholder="e.g. Audio 5, Lesson 3..." />
+                        </div>
+                      </div>
+                    )}
+
+                    <div>
+                      <label style={labelStyle}>Comments</label>
+                      <textarea value={formData.comentarios} onChange={set('comentarios')} style={{ ...inputStyle, minHeight: "80px", resize: "vertical" }} placeholder="Observations or additional notes..." />
+                    </div>
+                  </>
+                )}
+
+                {/* ── PESTAÑA EXTRA INFO ── */}
+                {pestanaActiva === 'extra' && (
+                  <>
+                    <div style={{ marginBottom: "20px", padding: "14px 16px", background: "#eef2fb", borderRadius: "10px", borderLeft: `4px solid ${PRIMARY}` }}>
+                      <p style={{ margin: 0, fontSize: "13px", color: "#5a6a85", fontFamily: "'Lato', sans-serif" }}>
+                        Additional information.
+                      </p>
+                    </div>
+
+                    {/* Padre */}
+                    <div style={{ marginBottom: "8px" }}>
+                      <p style={{ ...labelStyle, color: PRIMARY, fontSize: "14px", marginBottom: "12px" }}>— Father's Information</p>
+                    </div>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", marginBottom: "20px" }}>
+                      <div>
+                        <label style={labelStyle}>Father's Name</label>
+                        <input className="mbr-input" type="text" value={formData.nombre_padre} onChange={set('nombre_padre')} style={inputStyle} placeholder="Father's full name" />
+                      </div>
+                      <div>
+                        <label style={labelStyle}>Father's Phone</label>
+                        <input className="mbr-input" type="text" value={formData.telefono_padre} onChange={set('telefono_padre')} style={inputStyle} placeholder="+1 809 000 0000" />
+                      </div>
+                    </div>
+
+                    {/* Madre */}
+                    <div style={{ marginBottom: "8px" }}>
+                      <p style={{ ...labelStyle, color: PRIMARY, fontSize: "14px", marginBottom: "12px" }}>— Mother's Information</p>
+                    </div>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", marginBottom: "20px" }}>
+                      <div>
+                        <label style={labelStyle}>Mother's Name</label>
+                        <input className="mbr-input" type="text" value={formData.nombre_madre} onChange={set('nombre_madre')} style={inputStyle} placeholder="Mother's full name" />
+                      </div>
+                      <div>
+                        <label style={labelStyle}>Mother's Phone</label>
+                        <input className="mbr-input" type="text" value={formData.telefono_madre} onChange={set('telefono_madre')} style={inputStyle} placeholder="+1 809 000 0000" />
+                      </div>
+                    </div>
+
+                    {/* Salud y contacto */}
+                    <div style={{ marginBottom: "8px" }}>
+                      <p style={{ ...labelStyle, color: PRIMARY, fontSize: "14px", marginBottom: "12px" }}>— Health & Contact</p>
+                    </div>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+                      <div>
+                        <label style={labelStyle}>Blood Type</label>
+                        <select value={formData.tipo_sangre} onChange={set('tipo_sangre')} style={inputStyle} className="mbr-input">
+                          <option value="">Select...</option>
+                          {["A+","A-","B+","B-","AB+","AB-","O+","O-"].map(t => (
+                            <option key={t} value={t}>{t}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label style={labelStyle}>Email</label>
+                        <input className="mbr-input" type="email" value={formData.correo} onChange={set('correo')} style={inputStyle} placeholder="email@example.com" />
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
 
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "15px", marginBottom: "15px" }}>
-                <div>
-                  <label style={{ display: "block", marginBottom: "5px", fontWeight: "600" }}>País *</label>
-                  <select required value={formData.pais_id} onChange={(e) => setFormData({...formData, pais_id: e.target.value})} style={{ width: "100%", padding: "10px", border: "1px solid #ddd", borderRadius: "6px" }}>
-                    <option value="">Seleccionar país...</option>
-                    {paises.map(pais => (
-                      <option key={pais.id} value={pais.id}>{pais.nombre}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label style={{ display: "block", marginBottom: "5px", fontWeight: "600" }}>Ciudad</label>
-                  <input type="text" value={formData.ciudad} onChange={(e) => setFormData({...formData, ciudad: e.target.value})} style={{ width: "100%", padding: "10px", border: "1px solid #ddd", borderRadius: "6px" }} />
-                </div>
-              </div>
-
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "15px", marginBottom: "15px" }}>
-                <div>
-                  <label style={{ display: "block", marginBottom: "5px", fontWeight: "600" }}>Edad</label>
-                  <input type="number" value={formData.edad} onChange={(e) => setFormData({...formData, edad: e.target.value})} style={{ width: "100%", padding: "10px", border: "1px solid #ddd", borderRadius: "6px" }} />
-                </div>
-
-                <div>
-                  <label style={{ display: "block", marginBottom: "5px", fontWeight: "600" }}>Estado Civil</label>
-                  <select value={formData.estado_civil} onChange={(e) => setFormData({...formData, estado_civil: e.target.value})} style={{ width: "100%", padding: "10px", border: "1px solid #ddd", borderRadius: "6px" }}>
-                    <option value="">Seleccionar...</option>
-                    <option value="Soltero/a">Soltero/a</option>
-                    <option value="Casado/a">Casado/a</option>
-                    <option value="Divorciado/a">Divorciado/a</option>
-                    <option value="Viudo/a">Viudo/a</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label style={{ display: "block", marginBottom: "5px", fontWeight: "600" }}>Profesión</label>
-                  <input type="text" value={formData.profesion} onChange={(e) => setFormData({...formData, profesion: e.target.value})} style={{ width: "100%", padding: "10px", border: "1px solid #ddd", borderRadius: "6px" }} />
-                </div>
-              </div>
-
-              <div style={{ marginBottom: "15px" }}>
-                <label style={{ display: "block", marginBottom: "5px", fontWeight: "600" }}>Evangelizado Por</label>
-                <input type="text" value={formData.evangelizado_por} onChange={(e) => setFormData({...formData, evangelizado_por: e.target.value})} style={{ width: "100%", padding: "10px", border: "1px solid #ddd", borderRadius: "6px" }} />
-              </div>
-
-              <div style={{ marginBottom: "15px" }}>
-                <label style={{ display: "block", marginBottom: "5px", fontWeight: "600" }}>Tipo de Miembro *</label>
-                <select required value={formData.tipo_miembro} onChange={(e) => setFormData({...formData, tipo_miembro: e.target.value})} style={{ width: "100%", padding: "10px", border: "1px solid #ddd", borderRadius: "6px" }}>
-                  <option value="Registrado">Registrado</option>
-                  <option value="Comprometido">Comprometido</option>
-                  <option value="Voluntario">Voluntario</option>
-                </select>
-              </div>
-
-              {/* Campos Condicionales según Tipo de Miembro */}
-              {formData.tipo_miembro === 'Comprometido' && (
-                <div style={{ marginBottom: "15px", padding: "15px", background: "#e8f5e9", borderRadius: "8px" }}>
-                  <label style={{ display: "block", marginBottom: "5px", fontWeight: "600", color: "#2e7d32" }}>Cargo o Función</label>
-                  <input type="text" value={formData.cargo_funcion} onChange={(e) => setFormData({...formData, cargo_funcion: e.target.value})} style={{ width: "100%", padding: "10px", border: "1px solid #a5d6a7", borderRadius: "6px" }} placeholder="Ej: Pastor, Líder de Célula, etc." />
-                </div>
-              )}
-
-              {formData.tipo_miembro === 'Registrado' && (
-                <div style={{ marginBottom: "15px", padding: "15px", background: "#e3f2fd", borderRadius: "8px" }}>
-                  <label style={{ display: "block", marginBottom: "5px", fontWeight: "600", color: "#1565c0" }}>Avance Audio</label>
-                  <input type="text" value={formData.avance_audio} onChange={(e) => setFormData({...formData, avance_audio: e.target.value})} style={{ width: "100%", padding: "10px", border: "1px solid #90caf9", borderRadius: "6px" }} placeholder="Ej: Audio 5, Lección 3, etc." />
-                </div>
-              )}
-
-              {formData.tipo_miembro === 'Voluntario' && (
-                <div style={{ marginBottom: "15px", padding: "15px", background: "#fff3e0", borderRadius: "8px" }}>
-                  <div style={{ marginBottom: "10px" }}>
-                    <label style={{ display: "block", marginBottom: "5px", fontWeight: "600", color: "#e65100" }}>Ministerio OF</label>
-                    <input type="text" value={formData.ministerio_of} onChange={(e) => setFormData({...formData, ministerio_of: e.target.value})} style={{ width: "100%", padding: "10px", border: "1px solid #ffcc80", borderRadius: "6px" }} placeholder="Ej: Alabanza, Multimedia, etc." />
-                  </div>
-                  <div>
-                    <label style={{ display: "block", marginBottom: "5px", fontWeight: "600", color: "#e65100" }}>Avance Audio</label>
-                    <input type="text" value={formData.avance_audio} onChange={(e) => setFormData({...formData, avance_audio: e.target.value})} style={{ width: "100%", padding: "10px", border: "1px solid #ffcc80", borderRadius: "6px" }} placeholder="Ej: Audio 5, Lección 3, etc." />
-                  </div>
-                </div>
-              )}
-
-              <div style={{ marginBottom: "20px" }}>
-                <label style={{ display: "block", marginBottom: "5px", fontWeight: "600" }}>Comentarios</label>
-                <textarea value={formData.comentarios} onChange={(e) => setFormData({...formData, comentarios: e.target.value})} style={{ width: "100%", padding: "10px", border: "1px solid #ddd", borderRadius: "6px", minHeight: "80px" }} placeholder="Observaciones o notas adicionales..." />
-              </div>
-
-              <div style={{ display: "flex", gap: "10px" }}>
-                <button type="submit" style={{ flex: 1, padding: "12px", background: "#4CAF50", color: "white", border: "none", borderRadius: "6px", fontWeight: "600", cursor: "pointer" }}>
-                  {miembroEditando ? 'Actualizar' : 'Crear'}
+              {/* Botones */}
+              <div style={{ display: "flex", gap: "12px", padding: "0 28px 24px" }}>
+                <button
+                  type="submit"
+                  style={{ flex: 1, padding: "13px", background: `linear-gradient(135deg, ${PRIMARY}, ${PRIMARY_LIGHT})`, color: "white", border: "none", borderRadius: "10px", fontWeight: "700", fontFamily: "'Lato', sans-serif", fontSize: "14px", cursor: "pointer", letterSpacing: "0.5px", boxShadow: "0 4px 14px rgba(26,84,144,0.3)" }}
+                >
+                  {miembroEditando ? 'Update Member' : 'Create Member'}
                 </button>
-                <button type="button" onClick={cerrarModal} style={{ flex: 1, padding: "12px", background: "#999", color: "white", border: "none", borderRadius: "6px", fontWeight: "600", cursor: "pointer" }}>
-                  Cancelar
+                <button
+                  type="button"
+                  onClick={cerrarModal}
+                  style={{ flex: 1, padding: "13px", background: "#f0f4fa", color: "#5a6a85", border: "none", borderRadius: "10px", fontWeight: "700", fontFamily: "'Lato', sans-serif", fontSize: "14px", cursor: "pointer" }}
+                >
+                  Cancel
                 </button>
               </div>
             </form>
