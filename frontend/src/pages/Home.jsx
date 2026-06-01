@@ -35,7 +35,10 @@ export default function Home() {
   const cargarPermisos = async () => {
     try {
       const response = await axios.get('/auth/mis-permisos');
-      setPermisosUsuario(response.data.permisos);
+      const permisosActivos = (response.data.permisos || [])
+        .filter(p => p.activo)
+        .map(p => p.nombre);
+      setPermisosUsuario(permisosActivos);
     } catch (error) {
       console.error('Error al cargar permisos:', error);
       setPermisosUsuario(['estudios_biblicos', 'reportes', 'administracion', 'miembros', 'contactos', 'configuracion']);
@@ -333,8 +336,7 @@ export default function Home() {
             <div>
               <div style={{ fontSize: "14px", fontWeight: "600" }}>{user?.nombre}</div>
               <div style={{ fontSize: "12px", opacity: 0.8 }}>
-                {user?.rol_id === 1 ? 'Administrador' : 
-                 user?.rol_id === 2 ? 'Pastor' : 'Misionero'} 
+                {user?.rol_nombre || 'Usuario'} 
                 {user?.pais && ` • ${user.pais}`}
               </div>
             </div>

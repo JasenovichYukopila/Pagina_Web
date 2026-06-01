@@ -67,22 +67,9 @@ const cargarDatosIniciales = async () => {
   try {
     setCargandoDatos(true);
     
-    // Cargar continentes desde la BD
     const continentesData = await administracionService.getAllContinentes();
+    setContinentes(continentesData);
     
-    // Cargar países desde la API
-    const paisesData = await administracionService.getAllPaises();
-    
-    // Agrupar países por continente
-    const continentesConPaises = continentesData.map(cont => ({
-      id: cont.id,
-      nombre: cont.nombre,
-      paises: paisesData.filter(p => p.continente === cont.nombre)
-    }));
-    
-    setContinentes(continentesConPaises);
-    
-// Cargar miembros COMPROMETIDOS (sin filtro de país todavía)
     const miembrosData = await miembrosService.getAll({ tipo_miembro: 'Comprometido' });
     setMisioneros(miembrosData); 
     
@@ -556,7 +543,7 @@ const actualizarEstudioEstudiante = (misioneroId, estudianteId, dia, campo, valo
   if (horasActual > 0 || capituloActual) {
     estudiosService.guardarEstudio({
       contacto_id: estudianteId,
-      miembro_responsable_id: misioneroId,
+      miembro_id: misioneroId,
       pais_id: paisSeleccionado,
       mes: mesSeleccionado,
       anio: añoActual,
@@ -637,11 +624,10 @@ const agregarPais = async () => {
     }
     
     // Crear país en la BD
-const nuevoPais = await administracionService.crearPais({
+const nuevoPais = await administracionService.crearPaisConContinente({
       nombre: nuevoNombrePais.trim(),
       continente: continente.nombre,
-      codigo_iso: '', // Opcional
-      activo: true
+      codigo_iso: '',
     });
     
     // Actualizar estado local
@@ -1884,7 +1870,7 @@ const eliminarPais = async (continenteId, paisId) => {
                         promesasEstudios.push(
                           estudiosService.guardarEstudio({
                             contacto_id: nuevoContacto.id,
-                            miembro_responsable_id: misioneroSeleccionado,
+                            miembro_id: misioneroSeleccionado,
                             pais_id: paisSeleccionado,
                             mes: mesSeleccionado,
                             anio: añoActual,
